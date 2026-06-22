@@ -46,8 +46,8 @@ First run grabs the model (~74 MB for the default), then it's cached forever. Ap
 
 ## Why though?
 
-Because it's 2025 and you still shouldn't have to *manually transcribe a voice note like a court stenographer.* Your boss is busy. So are you. Let the robot listen.
+Because it's 2026 and you still shouldn't have to *manually transcribe a voice note like a court stenographer.* Your boss is busy. So are you. Let the robot listen.
 
 ## License
 
-[MIT](LICENSE) — do whatever you want with it. © 2025 Hetansh Waghela.
+[MIT](LICENSE) — do whatever you want with it. © 2026 Hetansh Waghela.
