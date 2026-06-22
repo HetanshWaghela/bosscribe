@@ -20,14 +20,33 @@ SUPPORTED_EXTENSIONS = {
 }
 
 
-def check_ffmpeg() -> bool:
-    """Check if ffmpeg is installed. Shows install instructions if not."""
-    if shutil.which("ffmpeg") is not None:
-        return True
+def _detect_ffmpeg_installer() -> Optional[tuple[str, list[str]]]:
+    """Find an available package manager and the command to install ffmpeg.
 
-    console.print("\n[bold red]✗ FFmpeg is not installed![/bold red]")
-    console.print("  Bosscribe needs FFmpeg to process audio files.\n")
+    Returns (label, command) or None if no known package manager is found.
+    """
+    if sys.platform == "darwin":
+        if shutil.which("brew"):
+            return ("Homebrew", ["brew", "install", "ffmpeg"])
+    elif sys.platform == "win32":
+        if shutil.which("winget"):
+            return ("winget", ["winget", "install", "--id", "Gyan.FFmpeg", "-e"])
+        if shutil.which("choco"):
+            return ("Chocolatey", ["choco", "install", "ffmpeg", "-y"])
+    else:
+        if shutil.which("apt-get"):
+            return ("apt", ["sudo", "apt-get", "install", "-y", "ffmpeg"])
+        if shutil.which("dnf"):
+            return ("dnf", ["sudo", "dnf", "install", "-y", "ffmpeg"])
+        if shutil.which("pacman"):
+            return ("pacman", ["sudo", "pacman", "-S", "--noconfirm", "ffmpeg"])
+        if shutil.which("zypper"):
+            return ("zypper", ["sudo", "zypper", "install", "-y", "ffmpeg"])
+    return None
 
+
+def _print_manual_ffmpeg_instructions() -> None:
+    """Print platform-specific manual install instructions for ffmpeg."""
     if sys.platform == "darwin":
         console.print("  [bold]Install on macOS:[/bold]")
         console.print("    [cyan]brew install ffmpeg[/cyan]\n")
@@ -41,6 +60,59 @@ def check_ffmpeg() -> bool:
         console.print("    [cyan]sudo dnf install ffmpeg[/cyan]  (Fedora)")
         console.print("    [cyan]sudo pacman -S ffmpeg[/cyan]    (Arch)\n")
 
+
+def check_ffmpeg(auto_install: bool = True) -> bool:
+    """Check if ffmpeg is installed; offer to install it if missing.
+
+    When ffmpeg is absent and we're running interactively, detect the system
+    package manager and offer to install ffmpeg automatically. Falls back to
+    printing manual instructions if the user declines, no package manager is
+    found, or we're not in a terminal.
+    """
+    if shutil.which("ffmpeg") is not None:
+        return True
+
+    console.print("\n[bold red]✗ FFmpeg isn't installed.[/bold red]")
+    console.print("  Bosscribe needs FFmpeg to read audio files.\n")
+
+    installer = _detect_ffmpeg_installer()
+
+    # Only offer to auto-install when we have a package manager AND a terminal
+    # to prompt in (don't hang or guess when piped/scripted).
+    if auto_install and installer is not None and sys.stdin.isatty():
+        label, cmd = installer
+        console.print(f"  Bosscribe can install it for you via {label}:")
+        console.print(f"    [cyan]{' '.join(cmd)}[/cyan]\n")
+        try:
+            answer = input("  Install FFmpeg now? [Y/n] ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            console.print()
+            answer = "n"
+
+        if answer in ("", "y", "yes"):
+            console.print(f"\n[cyan]Installing FFmpeg via {label}…[/cyan]\n")
+            try:
+                result = subprocess.run(cmd)
+            except OSError as e:
+                console.print(
+                    f"[bold red]✗ Couldn't run the installer:[/bold red] {e}\n"
+                )
+                _print_manual_ffmpeg_instructions()
+                return False
+            if result.returncode == 0 and shutil.which("ffmpeg") is not None:
+                console.print("\n[green]✓ FFmpeg installed! Carrying on.[/green]")
+                return True
+            console.print(
+                "\n[bold red]✗ FFmpeg install didn't complete.[/bold red]"
+                " Try installing it manually:\n"
+            )
+            _print_manual_ffmpeg_instructions()
+            return False
+
+        # User declined — show manual instructions
+        console.print()
+
+    _print_manual_ffmpeg_instructions()
     return False
 
 

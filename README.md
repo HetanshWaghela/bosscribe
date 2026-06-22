@@ -17,9 +17,16 @@ Boom. Text. Paste it into ChatGPT, reply, get on with your life. Runs 100% on yo
 pip install bosscribe
 ```
 
-You'll need [FFmpeg](https://ffmpeg.org/) too (it does the audio heavy lifting):
+That's it. You also need [FFmpeg](https://ffmpeg.org/) (it does the audio heavy lifting) — but don't sweat it: if it's missing, Bosscribe spots it on first run and offers to install it for you. 🪄
 
-`brew install ffmpeg` · `choco install ffmpeg` · `sudo apt install ffmpeg`
+```
+✗ FFmpeg isn't installed.
+  Bosscribe can install it for you via Homebrew:
+    brew install ffmpeg
+  Install FFmpeg now? [Y/n]
+```
+
+Prefer doing it yourself? `brew install ffmpeg` · `choco install ffmpeg` · `sudo apt install ffmpeg`
 
 ## Use
 

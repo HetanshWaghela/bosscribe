@@ -57,6 +57,58 @@ class TestUtils:
         assert result == custom_dir / "meeting.txt"
         assert custom_dir.exists()  # Should create the dir
 
+    def test_check_ffmpeg_present(self):
+        """Should return True when ffmpeg is on PATH."""
+        from bosscribe.utils import check_ffmpeg
+        with patch("shutil.which", return_value="/usr/bin/ffmpeg"):
+            assert check_ffmpeg() is True
+
+    def test_check_ffmpeg_missing_non_interactive(self):
+        """Should return False (no prompt) when missing and not a tty."""
+        from bosscribe.utils import check_ffmpeg
+        with patch("shutil.which", return_value=None), \
+             patch("sys.stdin.isatty", return_value=False):
+            assert check_ffmpeg() is False
+
+    def test_check_ffmpeg_missing_auto_install_disabled(self):
+        """Should not attempt install when auto_install=False."""
+        from bosscribe.utils import check_ffmpeg
+        with patch("shutil.which", return_value=None), \
+             patch("subprocess.run") as mock_run:
+            assert check_ffmpeg(auto_install=False) is False
+            mock_run.assert_not_called()
+
+    def test_check_ffmpeg_prompts_and_installs(self):
+        """Should run the installer when user accepts, then re-check PATH."""
+        from bosscribe.utils import check_ffmpeg
+        # which: absent on first check, present after "install"
+        which_results = [None, "/opt/homebrew/bin/brew", "/opt/homebrew/bin/ffmpeg"]
+        with patch("shutil.which", side_effect=lambda c: (
+                "/opt/homebrew/bin/brew" if c == "brew"
+                else which_results.pop(0) if which_results else None
+             )), \
+             patch("sys.platform", "darwin"), \
+             patch("sys.stdin.isatty", return_value=True), \
+             patch("builtins.input", return_value="y"), \
+             patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            result = check_ffmpeg()
+            mock_run.assert_called_once()
+            assert result is True
+
+    def test_check_ffmpeg_decline_install(self):
+        """Should return False and not install when user declines."""
+        from bosscribe.utils import check_ffmpeg
+        with patch("shutil.which", side_effect=lambda c: (
+                "/opt/homebrew/bin/brew" if c == "brew" else None
+             )), \
+             patch("sys.platform", "darwin"), \
+             patch("sys.stdin.isatty", return_value=True), \
+             patch("builtins.input", return_value="n"), \
+             patch("subprocess.run") as mock_run:
+            assert check_ffmpeg() is False
+            mock_run.assert_not_called()
+
     def test_supported_extensions(self):
         """Opus must be in supported extensions."""
         from bosscribe.utils import SUPPORTED_EXTENSIONS
