@@ -9,7 +9,7 @@ Your boss just sent another 4-minute voice note. You're not listening to that. �
 transcribe voice_note.opus
 ```
 
-Boom. Text. Paste it into ChatGPT, reply, get on with your life. Runs 100% on your machine — no API keys, no accounts, nobody snooping on what your boss rambled about.
+Boom — words. Paste into GPT, fire back a reply, get on with your life. Runs 100% on your machine — no API keys, no accounts, nobody snooping on whatever your boss just rambled about.
 
 ## Install
 
